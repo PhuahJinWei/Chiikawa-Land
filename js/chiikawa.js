@@ -90,6 +90,12 @@ const Characters = [];
 
 // Which character is currently being arrow-dragged (one at a time)
 let _activeDragChar = null;
+let _activeRoomDragChar = null;
+
+// Room arrow sizing (larger for zoomed-in view)
+const ROOM_ARROW_BODY_SPACING = 40;
+const ROOM_ARROW_BODY_SIZE = 28;
+const ROOM_ARROW_HEAD_SIZE = 48;
 
 // Cached house object reference (set once during init)
 let _houseObj = null;
@@ -140,6 +146,10 @@ function _openRoom() {
 function _closeRoom() {
   _room.isOpen = false;
   _room.overlay.classList.add('hidden');
+  if (_activeRoomDragChar) {
+    _activeRoomDragChar._cancelRoomDrag();
+    _activeRoomDragChar = null;
+  }
 }
 
 function _showZoomButton() {
@@ -207,6 +217,28 @@ function _initSharedRoom() {
   window.addEventListener('touchmove', onRoomPanMove, { passive: false });
   window.addEventListener('mouseup', onRoomPanEnd);
   window.addEventListener('touchend', onRoomPanEnd);
+
+  // Room character drag (shared window listeners)
+  function _getPtr(e) {
+    return e.touches ? e.touches[0] : e;
+  }
+  window.addEventListener('mousemove', e => {
+    if (_activeRoomDragChar) _activeRoomDragChar._onRoomDragMove(e.clientX, e.clientY);
+  });
+  window.addEventListener('touchmove', e => {
+    if (!_activeRoomDragChar) return;
+    const t = _getPtr(e);
+    if (t) { e.preventDefault(); _activeRoomDragChar._onRoomDragMove(t.clientX, t.clientY); }
+  }, { passive: false });
+  window.addEventListener('mouseup', e => {
+    if (_activeRoomDragChar) _activeRoomDragChar._onRoomDragEnd(e.clientX, e.clientY);
+  });
+  window.addEventListener('touchend', e => {
+    if (!_activeRoomDragChar) return;
+    const t = e.changedTouches && e.changedTouches[0];
+    _activeRoomDragChar._onRoomDragEnd(t ? t.clientX : null, t ? t.clientY : null);
+    e.preventDefault();
+  });
 
   _showZoomButton();
 }
@@ -292,6 +324,15 @@ function createCharacter(config) {
   // --- Goal indicator ---
   let goalEl = null, showGoal = false;
 
+  // --- Room drag state ---
+  let roomDragging = false, roomDragMoved = false;
+  let roomDragStartScreenX = 0, roomDragStartScreenY = 0;
+  let roomArrowContainer = null;
+  let roomArrowBodyEls = [];
+  let roomArrowHeadEl = null;
+  let roomExitPending = false;
+  let roomGoalEl = null, showRoomGoal = false;
+
   // --- Night behavior ---
   let nightReturnTimer = 0;   // countdown for outdoor characters to return home at night
 
@@ -341,11 +382,34 @@ function createCharacter(config) {
     spriteEl.addEventListener('mousedown', onDragStart);
     spriteEl.addEventListener('touchstart', onDragStart, { passive: false });
 
-    // Room character click
-    roomSpriteEl.addEventListener('mousedown', e => e.stopPropagation());
-    roomSpriteEl.addEventListener('touchstart', e => e.stopPropagation(), { passive: false });
-    roomSpriteEl.addEventListener('click', onRoomClick);
-    roomSpriteEl.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); onRoomClick(e); });
+    // Prevent long-press save image on mobile
+    spriteEl.addEventListener('contextmenu', e => e.preventDefault());
+    roomSpriteEl.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Room character drag (replaces click handler)
+    // Arrow container goes on room-overlay (not pan-layer) so it's visible outside the viewport
+    roomArrowContainer = document.createElement('div');
+    roomArrowContainer.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:2100;';
+    roomArrowContainer.style.display = 'none';
+    document.body.appendChild(roomArrowContainer);
+
+    // Room goal indicator (inside pan-layer so it scrolls with room)
+    roomGoalEl = document.createElement('div');
+    roomGoalEl.className = 'goal-indicator room-goal-indicator';
+    const rGoalBase = document.createElement('img');
+    rGoalBase.className = 'goal-base';
+    rGoalBase.src = 'asset/images/goal_indicator.png';
+    rGoalBase.draggable = false;
+    const rGoalArrow = document.createElement('img');
+    rGoalArrow.className = 'goal-arrow';
+    rGoalArrow.src = 'asset/images/goal_arrow.png';
+    rGoalArrow.draggable = false;
+    roomGoalEl.appendChild(rGoalBase);
+    roomGoalEl.appendChild(rGoalArrow);
+    _room.panLayer.appendChild(roomGoalEl);
+
+    roomSpriteEl.addEventListener('mousedown', onRoomDragStart);
+    roomSpriteEl.addEventListener('touchstart', onRoomDragStart, { passive: false });
 
     setState(CHAR_STATES.IDLE);
   }
@@ -518,16 +582,165 @@ function createCharacter(config) {
   }
 
   // ========================
-  // ROOM CLICK
+  // ROOM DRAG-TO-MOVE
   // ========================
 
-  function onRoomClick(e) {
+  function onRoomDragStart(e) {
     e.stopPropagation();
-    if (roomClickCooldown > 0) return;
-    if (roomState === CHAR_STATES.IDLE || roomState === CHAR_STATES.IDLE_POSE || roomState === CHAR_STATES.WALKING) {
-      setRoomState(CHAR_STATES.IDLE_POSE);
-      roomClickCooldown = roomStateDuration;
+    if (_activeRoomDragChar && _activeRoomDragChar !== character) return;
+    if (e.touches) e.preventDefault();
+
+    const ptr = e.touches ? e.touches[0] : e;
+    roomDragging = true;
+    roomDragMoved = false;
+    roomDragStartScreenX = ptr.clientX;
+    roomDragStartScreenY = ptr.clientY;
+    _activeRoomDragChar = character;
+    _room.dragging = false; // cancel room panning
+  }
+
+  function onRoomDragMove(clientX, clientY) {
+    if (!roomDragging) return;
+    const dx = clientX - roomDragStartScreenX;
+    const dy = clientY - roomDragStartScreenY;
+
+    if (!roomDragMoved && (Math.abs(dx) > ARROW_DRAG_THRESHOLD || Math.abs(dy) > ARROW_DRAG_THRESHOLD)) {
+      roomDragMoved = true;
     }
+    if (roomDragMoved) {
+      // Convert character room position to screen coordinates
+      const rect = _room.panLayer.getBoundingClientRect();
+      const startPx = rect.left + (roomX / 100) * rect.width;
+      const startPy = rect.top + ((roomY - 4) / 100) * rect.height;
+      updateRoomArrowTrail(startPx, startPy, clientX, clientY);
+    }
+  }
+
+  function onRoomDragEnd(clientX, clientY) {
+    if (!roomDragging) return;
+    roomDragging = false;
+    _activeRoomDragChar = null;
+
+    if (roomDragMoved && clientX != null) {
+      const vpRect = _room.viewport.getBoundingClientRect();
+      const outside = clientX < vpRect.left || clientX > vpRect.right ||
+                      clientY < vpRect.top || clientY > vpRect.bottom;
+
+      if (outside) {
+        // Walk to center bottom, then exit house
+        roomTargetX = 50;
+        roomTargetY = 90;
+        roomExitPending = true;
+        roomState = CHAR_STATES.WALKING;
+        roomStateTimer = 0;
+        hideRoomGoalIndicator();
+      } else {
+        // Convert screen coords to room %
+        const rect = _room.panLayer.getBoundingClientRect();
+        const rX = ((clientX - rect.left) / rect.width) * 100;
+        const rY = ((clientY - rect.top) / rect.height) * 100;
+        roomTargetX = Math.max(5, Math.min(95, rX));
+        roomTargetY = Math.max(55, Math.min(90, rY));
+        roomExitPending = false;
+        roomState = CHAR_STATES.WALKING;
+        roomStateTimer = 0;
+        showRoomGoalIndicator();
+      }
+    } else if (!roomDragMoved) {
+      // Tap — trigger idle pose
+      if (roomClickCooldown <= 0 && (roomState === CHAR_STATES.IDLE || roomState === CHAR_STATES.IDLE_POSE || roomState === CHAR_STATES.WALKING)) {
+        setRoomState(CHAR_STATES.IDLE_POSE);
+        roomClickCooldown = roomStateDuration;
+      }
+    }
+    clearRoomArrowTrail();
+  }
+
+  function cancelRoomDrag() {
+    roomDragging = false;
+    clearRoomArrowTrail();
+  }
+
+  // ========================
+  // ROOM ARROW TRAIL
+  // ========================
+
+  function updateRoomArrowTrail(startX, startY, endX, endY) {
+    const dx = endX - startX;
+    const dy = endY - startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+
+    const bodyDist = Math.max(0, dist - ROOM_ARROW_HEAD_SIZE);
+    const totalSegments = Math.max(0, Math.floor(bodyDist / ROOM_ARROW_BODY_SPACING));
+    const numVisible = Math.max(0, totalSegments - 1);
+
+    while (roomArrowBodyEls.length < numVisible) {
+      const img = document.createElement('img');
+      img.src = 'asset/images/arrow_body.png';
+      img.className = 'arrow-body';
+      img.draggable = false;
+      roomArrowContainer.appendChild(img);
+      roomArrowBodyEls.push(img);
+    }
+
+    for (let i = 0; i < roomArrowBodyEls.length; i++) {
+      if (i < numVisible) {
+        const segDist = (i + 2) * ROOM_ARROW_BODY_SPACING;
+        const bx = startX + Math.cos(angle) * segDist;
+        const by = startY + Math.sin(angle) * segDist;
+        const el = roomArrowBodyEls[i];
+        el.style.display = 'block';
+        el.style.left   = (bx - ROOM_ARROW_BODY_SIZE / 2) + 'px';
+        el.style.top    = (by - ROOM_ARROW_BODY_SIZE / 2) + 'px';
+        el.style.width  = ROOM_ARROW_BODY_SIZE + 'px';
+        el.style.height = ROOM_ARROW_BODY_SIZE + 'px';
+      } else {
+        roomArrowBodyEls[i].style.display = 'none';
+      }
+    }
+
+    if (!roomArrowHeadEl) {
+      roomArrowHeadEl = document.createElement('img');
+      roomArrowHeadEl.src = 'asset/images/arrow_head.png';
+      roomArrowHeadEl.className = 'arrow-head';
+      roomArrowHeadEl.draggable = false;
+      roomArrowContainer.appendChild(roomArrowHeadEl);
+    }
+    roomArrowHeadEl.style.display = 'block';
+    roomArrowHeadEl.style.left    = (endX - ROOM_ARROW_HEAD_SIZE / 2) + 'px';
+    roomArrowHeadEl.style.top     = (endY - ROOM_ARROW_HEAD_SIZE / 2) + 'px';
+    roomArrowHeadEl.style.width   = ROOM_ARROW_HEAD_SIZE + 'px';
+    roomArrowHeadEl.style.height  = ROOM_ARROW_HEAD_SIZE + 'px';
+    roomArrowHeadEl.style.transform = 'rotate(' + angle + 'rad)';
+  }
+
+  function clearRoomArrowTrail() {
+    for (let i = 0; i < roomArrowBodyEls.length; i++) roomArrowBodyEls[i].style.display = 'none';
+    if (roomArrowHeadEl) roomArrowHeadEl.style.display = 'none';
+  }
+
+  // ========================
+  // ROOM GOAL INDICATOR
+  // ========================
+
+  function showRoomGoalIndicator() {
+    if (!roomGoalEl) return;
+    showRoomGoal = true;
+    roomGoalEl.style.display = 'block';
+    updateRoomGoalPosition();
+  }
+
+  function hideRoomGoalIndicator() {
+    showRoomGoal = false;
+    if (roomGoalEl) roomGoalEl.style.display = 'none';
+  }
+
+  function updateRoomGoalPosition() {
+    if (!showRoomGoal || !roomGoalEl) return;
+    // Position using percentage-based left/bottom like room characters
+    roomGoalEl.style.left = (roomTargetX - 3) + '%';
+    roomGoalEl.style.bottom = (100 - roomTargetY + 1) + '%';
   }
 
   // ========================
@@ -538,6 +751,7 @@ function createCharacter(config) {
     const show = state === CHAR_STATES.INSIDE_HOUSE;
     roomSpriteEl.style.display = show ? 'block' : 'none';
     roomShadowEl.style.display = show ? 'block' : 'none';
+    if (roomArrowContainer) roomArrowContainer.style.display = _room.isOpen ? 'block' : 'none';
   }
 
   function setRoomState(newState) {
@@ -547,15 +761,18 @@ function createCharacter(config) {
     switch (newState) {
       case CHAR_STATES.IDLE:
         roomStateDuration = _randomRange(2, 5);
+        hideRoomGoalIndicator();
         break;
       case CHAR_STATES.IDLE_POSE:
         roomCurrentPose = Math.floor(Math.random() * sprites.poses.length);
         roomStateDuration = 2;
         lastRoomSrc = null; // force GIF to restart on next render
+        hideRoomGoalIndicator();
         break;
       case CHAR_STATES.WALKING:
         roomTargetX = _randomRange(15, 85);
         roomTargetY = _randomRange(55, 90);
+        hideRoomGoalIndicator(); // AI walk — no goal indicator
         break;
     }
   }
@@ -581,7 +798,13 @@ function createCharacter(config) {
         const rdy = roomTargetY - roomY;
         const rdist = Math.sqrt(rdx * rdx + rdy * rdy);
         if (rdist < 1) {
-          setRoomState(CHAR_STATES.IDLE);
+          hideRoomGoalIndicator();
+          if (roomExitPending) {
+            roomExitPending = false;
+            setState(CHAR_STATES.EXITING_HOUSE);
+          } else {
+            setRoomState(CHAR_STATES.IDLE);
+          }
         } else {
           roomX += (rdx / rdist) * ROOM_WALK_SPEED * dt;
           roomY += (rdy / rdist) * ROOM_WALK_SPEED * dt;
@@ -829,6 +1052,10 @@ function createCharacter(config) {
     // Drag dispatch hooks (called by shared window listeners)
     _onDragMove: onDragMove,
     _onDragEnd: onDragEnd,
+    // Room drag dispatch hooks
+    _onRoomDragMove: onRoomDragMove,
+    _onRoomDragEnd: onRoomDragEnd,
+    _cancelRoomDrag: cancelRoomDrag,
   };
 
   return character;
