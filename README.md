@@ -4,4 +4,4 @@
 
 ---
 
-<div align="center"><img src="asset/demoPic.png" alt="demoPic" width="60%"></div>
+<div align="center"><img src="asset/images/demoPic.png" alt="demoPic" width="90%"></div>
