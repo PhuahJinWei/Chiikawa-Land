@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self';">
+  <title>Chiikawa Land</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Game viewport -->
+  <div id="game-viewport">
+    <div id="map-container">
+      <img id="map-base" src="asset/images/base_day.png" draggable="false" alt="">
+
+      <!-- Characters (outdoor) -->
+      <img id="chiikawa-shadow"  class="character-shadow" src="asset/images/shadow_1.png" draggable="false" alt="">
+      <img id="chiikawa-sprite"  class="character-sprite" src="asset/images/characters/chiikawa_idle_1.png" draggable="false" alt="Chiikawa">
+      <img id="hachiware-shadow" class="character-shadow" src="asset/images/shadow_1.png" draggable="false" alt="">
+      <img id="hachiware-sprite" class="character-sprite" src="asset/images/characters/hachiware_idle_1.png" draggable="false" alt="Hachiware">
+      <img id="usagi-shadow"     class="character-shadow" src="asset/images/shadow_1.png" draggable="false" alt="">
+      <img id="usagi-sprite"     class="character-sprite" src="asset/images/characters/usagi_idle_1.png" draggable="false" alt="Usagi">
+
+      <!-- Zoom button (appears on house) -->
+      <div id="zoom-btn" class="hidden">
+        <img src="asset/images/buttons/zoom.png" draggable="false" alt="Zoom">
+      </div>
+    </div>
+  </div>
+
+  <!-- Room preview popup -->
+  <div id="room-overlay" class="hidden">
+    <div id="room-window">
+      <div id="room-viewport">
+        <div id="room-pan-layer">
+          <img id="room-base" src="asset/images/room/base.png" draggable="false" alt="">
+          <img id="room-studytable" src="asset/images/room/studytable.png" draggable="false" alt="">
+          <img id="room-chiikawa-shadow"  class="room-character-shadow" src="asset/images/shadow_2.png" draggable="false" alt="">
+          <img id="room-chiikawa-sprite"  class="room-character-sprite" src="asset/images/characters/chiikawa_idle_1.png" draggable="false" alt="">
+          <img id="room-hachiware-shadow" class="room-character-shadow" src="asset/images/shadow_2.png" draggable="false" alt="">
+          <img id="room-hachiware-sprite" class="room-character-sprite" src="asset/images/characters/hachiware_idle_1.png" draggable="false" alt="">
+          <img id="room-usagi-shadow"     class="room-character-shadow" src="asset/images/shadow_2.png" draggable="false" alt="">
+          <img id="room-usagi-sprite"     class="room-character-sprite" src="asset/images/characters/usagi_idle_1.png" draggable="false" alt="">
+        </div>
+      </div>
+      <img id="room-frame" src="asset/images/room/window_frame.png" draggable="false" alt="">
+      <button id="room-close-btn" type="button">
+        <img src="asset/images/buttons/room_close.png" draggable="false" alt="Close">
+      </button>
+    </div>
+  </div>
+
+  <!-- Day banner -->
+  <div id="day-banner" class="hidden">
+    <img src="asset/images/text_field_1.png" draggable="false" alt="">
+    <span id="day-text">Day 1</span>
+  </div>
+
+  <!-- Status banner (bottom center notifications) -->
+  <div id="status-banner" class="hidden">
+    <img src="asset/images/text_field_2.png" draggable="false" alt="">
+    <span id="status-text"></span>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <button id="menu-btn" type="button">
+      <img src="asset/images/buttons/menu.png" id="menu-btn-img" draggable="false" alt="Menu">
+    </button>
+  </div>
+
+  <!-- Menu panel -->
+  <div id="menu-panel" class="hidden">
+    <div id="menu-content">
+      <button id="time-toggle-btn" type="button">夜にする</button>
+    </div>
+  </div>
+
+  <script src="js/objects.js" defer></script>
+  <script src="js/viewport.js" defer></script>
+  <script src="js/daynight.js" defer></script>
+  <script src="js/chiikawa.js" defer></script>
+  <script src="js/menu.js" defer></script>
+  <script src="js/game.js" defer></script>
+</body>
+</html>

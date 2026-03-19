@@ -1,0 +1,441 @@
+/* ============================================================
+   Chiikawa Land — Styles
+   ============================================================ */
+
+/* --- Reset --- */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: url('../asset/images/background.png') repeat;
+  background-size: 212px 264px;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* --- Game viewport & map --- */
+
+#game-viewport {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#map-container {
+  position: absolute;
+  width: 2000px;
+  height: 1000px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+#map-base {
+  display: block;
+  width: 2000px;
+  height: 1000px;
+  pointer-events: none;
+}
+
+/* --- Map objects --- */
+
+.map-object {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* --- Characters (outdoor) --- */
+
+.character-sprite {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.character-shadow {
+  position: absolute;
+  width: 60px;
+  height: 31px;
+  pointer-events: none;
+  z-index: 9;
+}
+
+/* --- Arrow drag trail --- */
+
+.arrow-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.arrow-body,
+.arrow-head {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* --- Goal indicator --- */
+
+.goal-indicator {
+  position: absolute;
+  pointer-events: none;
+  display: none;
+  z-index: 999;
+}
+
+.goal-base {
+  display: block;
+  width: 40px;
+  height: auto;
+}
+
+.goal-arrow {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: auto;
+  animation: goal-hover 1s ease-in-out infinite;
+}
+
+@keyframes goal-hover {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-8px); }
+}
+
+/* --- Zoom button (on house) --- */
+
+#zoom-btn {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 100;
+}
+
+#zoom-btn.hidden {
+  display: none;
+}
+
+#zoom-btn img {
+  width: 48px;
+  height: 48px;
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: transform 0.15s ease;
+}
+
+#zoom-btn:hover img {
+  transform: scale(1.1);
+}
+
+/* --- Room preview overlay --- */
+
+#room-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#room-overlay.hidden {
+  display: none;
+}
+
+#room-window {
+  position: relative;
+  width: min(85vw, 85vh);
+  height: min(85vw, 85vh);
+  overflow: hidden;
+}
+
+#room-viewport {
+  position: absolute;
+  top: 2%;
+  bottom: 2%;
+  left: 2%;
+  right: 2%;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#room-viewport:active {
+  cursor: grabbing;
+}
+
+#room-pan-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  will-change: transform;
+}
+
+#room-base {
+  height: 100%;
+  width: auto;
+  display: block;
+  pointer-events: none;
+}
+
+#room-studytable {
+  position: absolute;
+  pointer-events: none;
+  height: 40%;
+  width: auto;
+  z-index: 30;
+}
+
+.room-character-sprite {
+  position: absolute;
+  width: 15%;
+  height: auto;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.room-character-shadow {
+  position: absolute;
+  width: 10%;
+  height: auto;
+  pointer-events: none;
+  z-index: 9;
+}
+
+#room-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+#room-close-btn {
+  position: absolute;
+  top: 2%;
+  right: 2%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 60;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#room-close-btn img {
+  width: 40px;
+  height: 40px;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+/* --- Day banner --- */
+
+#day-banner {
+  position: fixed;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1500;
+  text-align: center;
+}
+
+#day-banner.hidden {
+  display: none;
+}
+
+#day-banner img {
+  width: 300px;
+  height: auto;
+  display: block;
+}
+
+#day-text {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
+  font-size: 22px;
+  font-weight: bold;
+  color: #5a4a3a;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#day-banner.banner-show {
+  animation: banner-slide-in 0.5s ease-out forwards;
+}
+
+#day-banner.banner-hide {
+  animation: banner-slide-out 0.4s ease-in forwards;
+}
+
+@keyframes banner-slide-in {
+  from { top: -120px; }
+  to   { top: 24px; }
+}
+
+@keyframes banner-slide-out {
+  from { top: 24px; }
+  to   { top: -120px; }
+}
+
+/* --- HUD --- */
+
+#hud {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+}
+
+#menu-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: 54px;
+  height: 54px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#menu-btn img {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Menu panel --- */
+
+#menu-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 280px;
+  height: 100vh;
+  background: rgba(255, 255, 245, 0.95);
+  z-index: 999;
+  transform: translateX(0);
+  transition: transform 0.3s ease;
+  border-left: 2px solid #e0ddd0;
+}
+
+#menu-panel.hidden {
+  transform: translateX(100%);
+}
+
+#menu-content {
+  padding: 100px 24px 24px;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
+  color: #666;
+  text-align: center;
+}
+
+/* --- Status banner (bottom center) --- */
+
+#status-banner {
+  position: fixed;
+  bottom: -140px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1500;
+  text-align: center;
+  pointer-events: none;
+}
+
+#status-banner.hidden {
+  display: none;
+}
+
+#status-banner img {
+  width: 280px;
+  height: auto;
+  display: block;
+}
+
+#status-text {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+  color: #5a4a3a;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#status-banner.status-show {
+  animation: status-slide-up 0.45s ease-out forwards;
+}
+
+#status-banner.status-hide {
+  animation: status-slide-down 0.35s ease-in forwards;
+}
+
+@keyframes status-slide-up {
+  from { bottom: -140px; }
+  to   { bottom: 48px; }
+}
+
+@keyframes status-slide-down {
+  from { bottom: 48px; }
+  to   { bottom: -140px; }
+}
+
+/* --- Time toggle button (menu) --- */
+
+#time-toggle-btn {
+  display: block;
+  width: 100%;
+  background: #FFF7D9;
+  border: 3px solid #ffffff;
+  border-radius: 14px;
+  padding: 14px 24px;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Meiryo', sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  color: #5a4a3a;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 8px;
+}
+
+#time-toggle-btn:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+#time-toggle-btn:active {
+  transform: scale(0.97);
+}

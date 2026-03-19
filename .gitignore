@@ -1,0 +1,19 @@
+# Claude Code config
+.claude/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Local dev
+start.bat
+
+.asset/images/Edit/
