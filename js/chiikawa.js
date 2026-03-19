@@ -19,12 +19,20 @@ const ARROW_BODY_SPACING = 35; // px between arrow body segments
 const ARROW_DRAG_THRESHOLD = 8; // px movement to distinguish click vs drag
 
 // ============================================================
+// HOUSE ENTER CHANCE (0.0 – 1.0)
+// Probability that a character will choose to enter the house
+// after finishing a walk, instead of idling. Lower = rarer.
+// ============================================================
+const HOUSE_ENTER_CHANCE = 0.08;
+// ============================================================
+
+// ============================================================
 // HOUSE STAY DURATION (seconds)
 // Characters stay inside the house for a random duration
 // between these two values. Increase for longer stays.
 // ============================================================
-const HOUSE_STAY_MIN = 30;
-const HOUSE_STAY_MAX = 60;
+const HOUSE_STAY_MIN = 15;
+const HOUSE_STAY_MAX = 30;
 // ============================================================
 
 // --- Utility ---
@@ -953,7 +961,7 @@ function createCharacter(config) {
         if (stateTimer >= stateDuration) {
           if (night) {
             // 15% chance to briefly go outside at night
-            if (Math.random() < 0.15) {
+            if (Math.random() < HOUSE_ENTER_CHANCE) {
               nightReturnTimer = _randomRange(15, 30);
               setState(CHAR_STATES.EXITING_HOUSE);
             } else {
